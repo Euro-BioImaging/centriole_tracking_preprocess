@@ -85,7 +85,7 @@ def maxproject_reframe_concatenate(workdir: str,
             name = os.path.basename(item)
             namebase = os.path.splitext(name)[0]
             proj_path = os.path.join(max_proj_dir, namebase + '_max_proj.zarr')
-            proj = ops.max(pyr, axis = 'z', out = proj_path)
+            proj = ops.set(n_jobs = 1).max(pyr, axis = 'z', out = proj_path)
             pyrs.append(proj)
         print(f"Maxiumum intensity projections complete.")
 
