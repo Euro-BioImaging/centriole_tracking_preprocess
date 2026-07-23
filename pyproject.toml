@@ -1,0 +1,18 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "centriole-tracking-preprocess"
+version = "0.0.1"
+description = "Translate CZI frames to stage positions and write a single OME-Zarr."
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    "eubi-bridge==0.1.2b8",
+]
+
+[project.scripts]
+translate-to-zarr = "centriole_tracking_preprocess.translate_to_zarr:_cli"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/centriole_tracking_preprocess"]
