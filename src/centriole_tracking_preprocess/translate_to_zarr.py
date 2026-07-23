@@ -33,6 +33,7 @@ import os
 from dataclasses import dataclass
 from typing import Dict, List
 
+import dask
 import dask.array as da
 import numpy as np
 
@@ -202,9 +203,11 @@ async def translate_and_write(
     meta.autocompute_omerometa(n_c, dtype)
     meta.save_changes()
 
-    # ── 5. Sparse region writes into level 0 (single parallel dask store) ─
+    # ── 5. Sparse region writes into level 0 (one frame at a time) ───────
+    # Force synchronous (single-threaded) dask scheduler for the reads.
+    # read_czi returns a multi-chunk dask array; with the default threaded
+    # scheduler concurrent chunk reads corrupt channel data non-deterministically.
     print(f"Writing {n_t} frames sparsely into {outpath}/0 …")
-    sources, targets, regions = [], [], []
     for i, fm in enumerate(frames):
         frame = _read_frame_array(_fwd(os.path.join(image_dir, fm.filename)), t_ax)
         if max_project and z_ax_orig is not None:
@@ -215,13 +218,10 @@ async def translate_and_write(
             y_ax: slice(oy, oy + frame_y),
             x_ax: slice(ox, ox + frame_x),
         })
-        sources.append(frame)
-        targets.append(level0)
-        regions.append(region)
-        if (i + 1) % 25 == 0 or i == 0:
-            print(f"  queued frame {i + 1}/{n_t}: {fm.filename}")
-    # Disjoint T slices per frame → no two writes share a chunk, so lock=False.
-    da.store(sources, targets, regions=regions, lock=False)
+        with dask.config.set(scheduler='synchronous'):
+            da.store(frame, level0, regions=region, lock=False)
+        if (i + 1) % 10 == 0 or i == 0:
+            print(f"  wrote frame {i + 1}/{n_t}: {fm.filename}")
 
     # ── 6. Build pyramid levels 1..N with eubi's tensorstore downscaler ──
     #      Much faster than dask/coarsen: it reads the sparse level-0 canvas
