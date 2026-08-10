@@ -1,4 +1,4 @@
-# My Python Package
+# centriole_tracking_preprocess
 
 This is a Python package for translating data to Zarr format.
 
