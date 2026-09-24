@@ -168,8 +168,16 @@ async def translate_and_write(
           f"scale=({scale_y},{scale_x}) µm/px  dtype={dtype}")
 
     # ── 3. Integer pixel offset of each frame on the canvas ──────────────
-    # Negate stage Y: stage Y increases upward, but image rows increase downward.
-    locs_um = np.array([(-f.y_um, f.x_um) for f in frames], dtype=float)
+    # Stage Y maps to image rows *directly* (and stage X to columns): on this
+    # setup both axes increase in the same direction as the pixel indices, so
+    # neither is negated. Verified by phase-correlating the measured
+    # frame-to-frame image shift against the logged stage motion over five
+    # positions (P0001-P0005 of DMP/WT_Test_/20260629-153535): every
+    # measured-vs-stage slope came out positive on both axes (corr 0.58-0.95
+    # on the matching axis, ~0 on the cross terms). An earlier version negated
+    # Y here, which roughly doubled the residual drift and left the series
+    # jittering worse than doing no translation at all.
+    locs_um = np.array([(f.y_um, f.x_um) for f in frames], dtype=float)
     locs_um -= locs_um.min(axis=0)                          # origin -> (0, 0)
     offsets = np.floor(locs_um / np.array([scale_y, scale_x])).astype(int)   # (N, 2)
     canvas_y = int((offsets[:, 0] + frame_y).max())
