@@ -1,1 +1,10 @@
-pycache/
+__pycache__/
+*.py[cod]
+
+# Local data and scratch work (currently live one level up, outside this repo;
+# listed here so they stay ignored if the repo root ever moves up to granita/)
+script.sh
+Image/
+output/
+quarantine/
+*.zarr/
